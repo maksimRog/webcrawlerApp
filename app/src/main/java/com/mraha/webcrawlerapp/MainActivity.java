@@ -1,9 +1,8 @@
 package com.mraha.webcrawlerapp;
 
-import androidx.appcompat.app.AlertDialog;
-import androidx.appcompat.app.AppCompatActivity;
-
+import android.Manifest;
 import android.content.Context;
+import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -11,33 +10,23 @@ import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.appcompat.app.AlertDialog;
+import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Scanner;
 import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.ExecutorCompletionService;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
-
-import io.reactivex.rxjava3.android.schedulers.AndroidSchedulers;
-import io.reactivex.rxjava3.annotations.NonNull;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Observer;
-import io.reactivex.rxjava3.disposables.Disposable;
-import io.reactivex.rxjava3.observers.DisposableObserver;
-import io.reactivex.rxjava3.schedulers.Schedulers;
 
 public class MainActivity extends AppCompatActivity {
     private Button startSearchButton;
@@ -51,17 +40,25 @@ public class MainActivity extends AppCompatActivity {
     public static int MAX_LINK_DEPTH = 8;
     public static int MAX_CAPACITY = 10000;
     public AlertDialog progressBarDialog;
-    private FileWriter fileWriter;
+    private CSVWriter csvWriter;
     private int previousLinkHoldersStorageSize = 0;
     public final List<LinkHolder> linkHoldersStorage = new ArrayList<>(MAX_CAPACITY);
     public static final String URL_CONST = "https://www.tut.by/";
     public static final String SEARCH_CONST = "минск";
-    private final ExecutorService executorService = Executors.newFixedThreadPool(4);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
+        if(!checkPermission()){
+            askPermissions();
+        }
+        initViews();
+        initObjects();
+    }
+
+    private void initViews() {
         keywordView = findViewById(R.id.keywordView);
         startSearchButton = findViewById(R.id.startSearchView);
         generateSCVButton = findViewById(R.id.generateCSVView);
@@ -72,12 +69,29 @@ public class MainActivity extends AppCompatActivity {
         urlView.setText(URL_CONST);
         keywordView.setText(SEARCH_CONST);
         startSearchButton.setOnClickListener(v -> startSearch());
-        context = this;
-        progressBarDialog = initDialog();
         linkSizeView.setText(String.valueOf(MAX_CAPACITY));
         linkDepthView.setText(String.valueOf(MAX_LINK_DEPTH));
         setButtonInactive(generateSCVButton);
+        generateSCVButton.setOnClickListener(v -> writeToCSVFile());
+    }
 
+    private void writeToCSVFile() {
+        csvWriter.writeContent(resultView.getText().toString());
+    }
+
+    private boolean checkPermission() {
+        return checkSelfPermission(Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+    }
+
+    public void askPermissions() {
+        ActivityCompat.requestPermissions(this, new String[]
+                {Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+    }
+
+    private void initObjects() {
+        csvWriter = new CSVWriter(this);
+        progressBarDialog = initDialog();
+        context = this;
     }
 
     private void setButtonInactive(Button button) {
@@ -93,6 +107,7 @@ public class MainActivity extends AppCompatActivity {
     private AlertDialog initDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(new ProgressBar(this));
+        builder.setCancelable(false);
         return builder.create();
     }
 
@@ -133,50 +148,44 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processLinkStorage() {
-
         List<Callable<String>> tasks = new ArrayList<>();
-
         for (LinkHolder linkHolder : linkHoldersStorage) {
-            tasks.add(new Callable<String>() {
-                @Override
-                public String call() throws Exception {
-                    int val = Jsoup.connect(linkHolder.getLink()).get().text().toLowerCase()
+            tasks.add(() -> {
+                int val = 0;
+                try {
+                    val = Jsoup.connect(linkHolder.getLink()).get().text().toLowerCase()
                             .split(keywordView.getText().toString().toLowerCase()).length - 1;
-                    return linkHolder.getId() + " "+linkHolder.getLink() + " " + val + "\n";
+                } catch (IOException e) {
+                    e.printStackTrace();
                 }
+                return linkHolder.getId() + " " + linkHolder.getLink() + " " + val + "\n";
             });
         }
         try {
             List<Future<String>> results = executorService.invokeAll(tasks);
-            StringBuilder stringBuilder = new StringBuilder();
+            StringBuffer StringBuffer = new StringBuffer();
             for (Future<String> str : results) {
-                stringBuilder.append(str.get());
+                StringBuffer.append(str.get());
             }
             runOnUiThread(() -> {
-                resultView.setText(stringBuilder.toString());
+                progressBarDialog.dismiss();
+                resultView.setText(StringBuffer.toString());
+                makeButtonActive(generateSCVButton);
             });
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
+            runOnUiThread(() -> {
+                progressBarDialog.dismiss();
+                Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+            });
         }
-
- /*           executorService.execute(() -> {
-                try {
-                    int val = Jsoup.connect(linkHolder.getLink()).get().text().toLowerCase()
-                            .split(keywordView.getText().toString().toLowerCase()).length - 1;
-                    runOnUiThread(() -> {
-                        resultView.append(linkHolder.getLink() + " " + val + "\n");
-                    });
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            });*/
-
     }
 
 
     private void findLinksInDocument() {
         try {
             List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
+            majorLoop:
             for (int i = previousLinkHoldersStorageSize; i < linkHoldersStorage.size(); i++) {
                 LinkHolder linkHolder = linkHoldersStorage.get(i);
                 Document document = Jsoup.connect(linkHolder.getLink()).get();
@@ -187,26 +196,17 @@ public class MainActivity extends AppCompatActivity {
                         tempLinkHolderStorage.add(new LinkHolder(link, linkHolder.getLinkDepth() + 1));
                     }
                     if (tempLinkHolderStorage.size() + linkHoldersStorage.size() >= MAX_CAPACITY) {
-                        break;
+                        break majorLoop;
                     }
                 }
-                if (tempLinkHolderStorage.size() + linkHoldersStorage.size() >= MAX_CAPACITY) {
-                    break;
-                }
-
             }
             previousLinkHoldersStorageSize = linkHoldersStorage.size();
             linkHoldersStorage.addAll(tempLinkHolderStorage);
             if (!isStopConditionReached(linkHoldersStorage.get(linkHoldersStorage.size() - 1).getLinkDepth())) {
                 findLinksInDocument();
             } else {
-                runOnUiThread(() -> {
-                    progressBarDialog.dismiss();
-                    Toast.makeText(context, linkHoldersStorage.size() + " links were found!", Toast.LENGTH_LONG).show();
-                });
                 processLinkStorage();
             }
-
         } catch (IOException e) {
             e.printStackTrace();
             runOnUiThread(() -> {
@@ -219,5 +219,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onDestroy() {
         super.onDestroy();
+        csvWriter.closeWriter();
     }
 }
