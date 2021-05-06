@@ -19,14 +19,6 @@ public class CSVWriter {
         }
     }
 
-    public void writeContent(String content) {
-        try {
-            fileWriter.write(content);
-            fileWriter.flush();
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
     public void writeFoundData(List<LinkHolder> data) {
         try {
