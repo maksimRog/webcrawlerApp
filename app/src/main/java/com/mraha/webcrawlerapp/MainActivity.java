@@ -79,6 +79,7 @@ public class MainActivity extends AppCompatActivity {
         progressBarDialog.show();
         csvWriter.writeFoundData(linkHoldersStorage);
         progressBarDialog.dismiss();
+        Toast.makeText(this, "Data was saved to file!", Toast.LENGTH_SHORT).show();
     }
 
     private boolean checkPermission() {
