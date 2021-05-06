@@ -5,7 +5,15 @@ public class LinkHolder {
     private String link;
     private int linkDepth;
     private final int id;
+    private int termCounter;
 
+    public int getTermCounter() {
+        return termCounter;
+    }
+
+    public void setTermCounter(int termCounter) {
+        this.termCounter = termCounter;
+    }
 
     public LinkHolder(String link, int linkDepth) {
         id = idCounter;

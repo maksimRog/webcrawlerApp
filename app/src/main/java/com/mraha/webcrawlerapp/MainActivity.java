@@ -76,7 +76,9 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void writeToCSVFile() {
-        csvWriter.writeContent(resultView.getText().toString());
+        progressBarDialog.show();
+        csvWriter.writeFoundData(linkHoldersStorage);
+        progressBarDialog.dismiss();
     }
 
     private boolean checkPermission() {
@@ -89,7 +91,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initObjects() {
-        csvWriter = new CSVWriter(this);
+        csvWriter = new CSVWriter();
         progressBarDialog = initDialog();
         context = this;
     }
@@ -155,6 +157,7 @@ public class MainActivity extends AppCompatActivity {
                 try {
                     val = Jsoup.connect(linkHolder.getLink()).get().text().toLowerCase()
                             .split(keywordView.getText().toString().toLowerCase()).length - 1;
+                    linkHolder.setTermCounter(val);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
