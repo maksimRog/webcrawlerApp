@@ -38,6 +38,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView resultView;
     private Context context;
     public static int MAX_LINK_DEPTH = 8;
+    public static final int CONNECTION_TIME_OUT = 3000;
     public static int MAX_CAPACITY = 10000;
     public AlertDialog progressBarDialog;
     private CSVWriter csvWriter;
@@ -164,7 +165,8 @@ public class MainActivity extends AppCompatActivity {
             tasks.add(() -> {
                 int val = 0;
                 try {
-                    val = Jsoup.connect(linkHolder.getLink()).get().text().toLowerCase()
+                    val = Jsoup.connect(linkHolder.getLink())
+                            .timeout(CONNECTION_TIME_OUT).get().text().toLowerCase()
                             .split(keywordView.getText().toString().toLowerCase()).length - 1;
                     linkHolder.setTermCounter(val);
                 } catch (IOException e) {
@@ -200,7 +202,7 @@ public class MainActivity extends AppCompatActivity {
             majorLoop:
             for (int i = previousLinkHoldersStorageSize; i < linkHoldersStorage.size(); i++) {
                 LinkHolder linkHolder = linkHoldersStorage.get(i);
-                Document document = Jsoup.connect(linkHolder.getLink()).get();
+                Document document = Jsoup.connect(linkHolder.getLink()).timeout(CONNECTION_TIME_OUT).get();
                 Elements elements = document.select("a[href]");
                 for (Element element : elements) {
                     String link = element.attr("href");
@@ -223,7 +225,8 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             runOnUiThread(() -> {
                 progressBarDialog.dismiss();
-                Toast.makeText(context, "Something went wrong!", Toast.LENGTH_LONG).show();
+
+                Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
     }
