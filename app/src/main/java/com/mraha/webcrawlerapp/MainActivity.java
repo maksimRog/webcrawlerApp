@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
     private Button startSearchButton;
@@ -129,6 +128,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void startSearch() {
+        makeButtonInactive(generateSCVButton);
         String url = urlView.getText().toString();
         if (!isUrlCorrect(url)) {
             Toast.makeText(this, "Wrong URL!", Toast.LENGTH_SHORT).show();
@@ -147,11 +147,10 @@ public class MainActivity extends AppCompatActivity {
         }
         MAX_CAPACITY = Integer.parseInt(capStr);
         MAX_LINK_DEPTH = Integer.parseInt(depthStr);
-
-        linkHoldersStorage.add(new LinkHolder(url, 1));
-
         progressBarDialog.show();
         executorService.execute(() -> {
+            LinkHolder.idCounter=1;
+            linkHoldersStorage.add(new LinkHolder(url, 1));
             findLinksInDocument();
         });
     }
@@ -161,6 +160,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processLinkStorage() {
+
         List<Callable<String>> tasks = new ArrayList<>();
         for (LinkHolder linkHolder : linkHoldersStorage) {
             tasks.add(() -> {
@@ -207,7 +207,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void findLinksInDocument() {
-
         try {
             List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
             majorLoop:
@@ -236,7 +235,6 @@ public class MainActivity extends AppCompatActivity {
             e.printStackTrace();
             runOnUiThread(() -> {
                 progressBarDialog.dismiss();
-
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
