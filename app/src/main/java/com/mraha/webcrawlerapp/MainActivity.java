@@ -1,7 +1,6 @@
 package com.mraha.webcrawlerapp;
 
 import android.Manifest;
-import android.content.Context;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
 import android.widget.Button;
@@ -27,6 +26,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.stream.Collectors;
 
 public class MainActivity extends AppCompatActivity {
     private Button startSearchButton;
@@ -36,7 +36,8 @@ public class MainActivity extends AppCompatActivity {
     private EditText linkSizeView;
     private EditText linkDepthView;
     private TextView resultView;
-    private Context context;
+    private ProgressBar progressBar;
+    int progressCounter = 0;
     public static int MAX_LINK_DEPTH = 8;
     public static final int CONNECTION_TIME_OUT = 3000;
     public static int MAX_CAPACITY = 10000;
@@ -82,12 +83,12 @@ public class MainActivity extends AppCompatActivity {
         linkSizeView.setText(String.valueOf(MAX_CAPACITY));
         linkDepthView.setText(String.valueOf(MAX_LINK_DEPTH));
         generateSCVButton.setOnClickListener(v -> writeToCSVFile());
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setPadding(5,10,5,0);
     }
 
     private void writeToCSVFile() {
-        progressBarDialog.show();
         csvWriter.writeFoundData(linkHoldersStorage);
-        progressBarDialog.dismiss();
         Toast.makeText(this, "Data was saved to file!", Toast.LENGTH_SHORT).show();
     }
 
@@ -103,7 +104,6 @@ public class MainActivity extends AppCompatActivity {
     private void initObjects() {
         csvWriter = new CSVWriter();
         progressBarDialog = initDialog();
-        context = this;
     }
 
     private void makeButtonInactive(Button button) {
@@ -118,7 +118,7 @@ public class MainActivity extends AppCompatActivity {
 
     private AlertDialog initDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
-        builder.setView(new ProgressBar(this));
+        builder.setView(progressBar);
         builder.setCancelable(false);
         return builder.create();
     }
@@ -149,6 +149,7 @@ public class MainActivity extends AppCompatActivity {
         MAX_LINK_DEPTH = Integer.parseInt(depthStr);
 
         linkHoldersStorage.add(new LinkHolder(url, 1));
+
         progressBarDialog.show();
         executorService.execute(() -> {
             findLinksInDocument();
@@ -169,6 +170,11 @@ public class MainActivity extends AppCompatActivity {
                             .timeout(CONNECTION_TIME_OUT).get().text().toLowerCase()
                             .split(keywordView.getText().toString().toLowerCase()).length - 1;
                     linkHolder.setTermCounter(val);
+                    runOnUiThread(() -> {
+                        progressCounter++;
+                        float progress = ((float) progressCounter / linkHoldersStorage.size()) * 100;
+                        progressBar.setProgress((int) progress);
+                    });
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
@@ -178,25 +184,30 @@ public class MainActivity extends AppCompatActivity {
         try {
             List<Future<String>> results = executorService.invokeAll(tasks);
             StringBuffer StringBuffer = new StringBuffer();
+
             for (Future<String> str : results) {
                 StringBuffer.append(str.get());
             }
             runOnUiThread(() -> {
                 progressBarDialog.dismiss();
                 resultView.setText(StringBuffer.toString());
+                progressCounter = 0;
+                progressBar.setProgress(0);
                 makeButtonActive(generateSCVButton);
             });
         } catch (InterruptedException | ExecutionException e) {
             e.printStackTrace();
             runOnUiThread(() -> {
                 progressBarDialog.dismiss();
-                Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+                progressBar.setProgress(0);
+                progressCounter = 0;
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
     }
 
-
     private void findLinksInDocument() {
+
         try {
             List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
             majorLoop:
@@ -226,7 +237,7 @@ public class MainActivity extends AppCompatActivity {
             runOnUiThread(() -> {
                 progressBarDialog.dismiss();
 
-                Toast.makeText(context, e.getMessage(), Toast.LENGTH_LONG).show();
+                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
     }
