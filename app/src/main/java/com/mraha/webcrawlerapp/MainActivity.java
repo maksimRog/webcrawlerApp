@@ -7,6 +7,8 @@ import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
+import android.widget.TableLayout;
+import android.widget.TableRow;
 import android.widget.TextView;
 import android.widget.Toast;
 
@@ -47,15 +49,24 @@ public class MainActivity extends AppCompatActivity {
     public static final String SEARCH_CONST = "минск";
     private final ExecutorService executorService = Executors.newFixedThreadPool(20);
 
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_main);
-        if(!checkPermission()){
+        if (!checkPermission()) {
             askPermissions();
         }
         initViews();
         initObjects();
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        if (linkHoldersStorage.isEmpty()) {
+            makeButtonInactive(generateSCVButton);
+        }
     }
 
     private void initViews() {
@@ -71,7 +82,6 @@ public class MainActivity extends AppCompatActivity {
         startSearchButton.setOnClickListener(v -> startSearch());
         linkSizeView.setText(String.valueOf(MAX_CAPACITY));
         linkDepthView.setText(String.valueOf(MAX_LINK_DEPTH));
-        setButtonInactive(generateSCVButton);
         generateSCVButton.setOnClickListener(v -> writeToCSVFile());
     }
 
@@ -97,7 +107,7 @@ public class MainActivity extends AppCompatActivity {
         context = this;
     }
 
-    private void setButtonInactive(Button button) {
+    private void makeButtonInactive(Button button) {
         button.setBackgroundColor(getResources().getColor(R.color.inactive));
         button.setClickable(false);
     }

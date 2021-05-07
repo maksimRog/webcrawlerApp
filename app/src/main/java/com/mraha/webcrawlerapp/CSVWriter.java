@@ -1,6 +1,5 @@
 package com.mraha.webcrawlerapp;
 
-import android.content.Context;
 import android.os.Environment;
 
 import java.io.File;
@@ -27,7 +26,6 @@ public class CSVWriter {
             fileWriter.append("url");
             fileWriter.append(',');
             fileWriter.append("term counter");
-            fileWriter.append(',');
             fileWriter.append('\n');
             for (LinkHolder linkHolder : data) {
                 fileWriter.append(String.valueOf(linkHolder.getId()));
@@ -35,7 +33,6 @@ public class CSVWriter {
                 fileWriter.append(linkHolder.getLink());
                 fileWriter.append(',');
                 fileWriter.append(String.valueOf(linkHolder.getTermCounter()));
-                fileWriter.append(',');
                 fileWriter.append('\n');
             }
             fileWriter.flush();

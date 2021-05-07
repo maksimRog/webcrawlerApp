@@ -1,7 +1,7 @@
 package com.mraha.webcrawlerapp;
 
 public class LinkHolder {
-    private static int idCounter = 0;
+    private static int idCounter = 1;
     private String link;
     private int linkDepth;
     private final int id;
