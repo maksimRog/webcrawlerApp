@@ -1,8 +1,10 @@
 package com.mraha.webcrawlerapp;
 
 import android.Manifest;
+import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
+import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -81,9 +83,7 @@ public class MainActivity extends AppCompatActivity {
         startSearchButton.setOnClickListener(v -> startSearch());
         linkSizeView.setText(String.valueOf(MAX_CAPACITY));
         linkDepthView.setText(String.valueOf(MAX_LINK_DEPTH));
-        generateSCVButton.setOnClickListener(v -> writeToCSVFile());
-        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
-        progressBar.setPadding(5,10,5,0);
+        generateSCVButton.setOnClickListener(v -> showSaveToCSVDialog());
     }
 
     private void writeToCSVFile() {
@@ -101,7 +101,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initObjects() {
-        csvWriter = new CSVWriter();
         progressBarDialog = initDialog();
     }
 
@@ -116,6 +115,8 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private AlertDialog initDialog() {
+        progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
+        progressBar.setPadding(5, 10, 5, 0);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
         builder.setView(progressBar);
         builder.setCancelable(false);
@@ -149,7 +150,7 @@ public class MainActivity extends AppCompatActivity {
         MAX_LINK_DEPTH = Integer.parseInt(depthStr);
         progressBarDialog.show();
         executorService.execute(() -> {
-            LinkHolder.idCounter=1;
+            LinkHolder.idCounter = 1;
             linkHoldersStorage.add(new LinkHolder(url, 1));
             findLinksInDocument();
         });
@@ -238,6 +239,25 @@ public class MainActivity extends AppCompatActivity {
                 Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
             });
         }
+    }
+
+    public void showSaveToCSVDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        EditText editText = new EditText(this);
+        AlertDialog alertDialog = builder.setView(editText).setMessage("Files with same name will be overwritten.")
+                .setPositiveButton("ok", null).setTitle("Type file name.").create();
+        alertDialog.setOnShowListener(dialog -> {
+            Button button = ((AlertDialog) dialog).getButton(AlertDialog.BUTTON_POSITIVE);
+            button.setOnClickListener(v -> {
+                String fileName = editText.getText().toString();
+                if (!fileName.isEmpty()) {
+                    dialog.dismiss();
+                    csvWriter = new CSVWriter(fileName);
+                    writeToCSVFile();
+                }
+            });
+        });
+        alertDialog.show();
     }
 
     @Override

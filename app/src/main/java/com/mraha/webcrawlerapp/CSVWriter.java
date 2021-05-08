@@ -10,9 +10,9 @@ import java.util.List;
 public class CSVWriter {
     private FileWriter fileWriter;
 
-    public CSVWriter() {
+    public CSVWriter(String fileName) {
         try {
-            fileWriter = new FileWriter(new File(Environment.getExternalStorageDirectory(), "Data.csv"));
+            fileWriter = new FileWriter(new File(Environment.getExternalStorageDirectory(), fileName + ".csv"));
         } catch (IOException e) {
             e.printStackTrace();
         }
