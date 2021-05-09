@@ -1,10 +1,8 @@
 package com.mraha.webcrawlerapp;
 
 import android.Manifest;
-import android.content.DialogInterface;
 import android.content.pm.PackageManager;
 import android.os.Bundle;
-import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ProgressBar;
@@ -43,7 +41,6 @@ public class MainActivity extends AppCompatActivity {
     public static final int CONNECTION_TIME_OUT = 3000;
     public static int MAX_CAPACITY = 10000;
     public AlertDialog progressBarDialog;
-    private CSVWriter csvWriter;
     private int previousLinkHoldersStorageSize = 0;
     public final List<LinkHolder> linkHoldersStorage = new ArrayList<>(MAX_CAPACITY);
     public static final String URL_CONST = "https://www.tut.by/";
@@ -86,8 +83,10 @@ public class MainActivity extends AppCompatActivity {
         generateSCVButton.setOnClickListener(v -> showSaveToCSVDialog());
     }
 
-    private void writeToCSVFile() {
+    private void writeToCSVFile(String fileName) {
+        CSVWriter csvWriter = new CSVWriter(fileName);
         csvWriter.writeFoundData(linkHoldersStorage);
+        csvWriter.closeWriter();
         Toast.makeText(this, "Data was saved to file!", Toast.LENGTH_SHORT).show();
     }
 
@@ -101,7 +100,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initObjects() {
-        progressBarDialog = initDialog();
+        progressBarDialog = initProgressDialog();
     }
 
     private void makeButtonInactive(Button button) {
@@ -114,7 +113,7 @@ public class MainActivity extends AppCompatActivity {
         button.setClickable(true);
     }
 
-    private AlertDialog initDialog() {
+    private AlertDialog initProgressDialog() {
         progressBar = new ProgressBar(this, null, android.R.attr.progressBarStyleHorizontal);
         progressBar.setPadding(5, 10, 5, 0);
         AlertDialog.Builder builder = new AlertDialog.Builder(this);
@@ -162,7 +161,7 @@ public class MainActivity extends AppCompatActivity {
 
     private void processLinkStorage() {
 
-        List<Callable<String>> tasks = new ArrayList<>();
+        List<Callable<String>> tasks = new ArrayList<>(MAX_CAPACITY);
         for (LinkHolder linkHolder : linkHoldersStorage) {
             tasks.add(() -> {
                 int val = 0;
@@ -252,17 +251,11 @@ public class MainActivity extends AppCompatActivity {
                 String fileName = editText.getText().toString();
                 if (!fileName.isEmpty()) {
                     dialog.dismiss();
-                    csvWriter = new CSVWriter(fileName);
-                    writeToCSVFile();
+                    writeToCSVFile(fileName);
                 }
             });
         });
         alertDialog.show();
     }
 
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        csvWriter.closeWriter();
-    }
 }
