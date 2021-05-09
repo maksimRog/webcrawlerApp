@@ -47,7 +47,7 @@ public class MainActivity extends AppCompatActivity {
     public final List<LinkHolder> linkHoldersStorage = new ArrayList<>(MAX_CAPACITY);
     public static final String URL_CONST = "https://www.tut.by/";
     public static final String SEARCH_CONST = "минск";
-    private final ExecutorService executorService = Executors.newFixedThreadPool(20);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 2);
 
 
     @Override
@@ -70,7 +70,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initViews() {
-        recyclerView=findViewById(R.id.recyclerView);
+        recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
         keywordView = findViewById(R.id.keywordView);
         startSearchButton = findViewById(R.id.startSearchView);
@@ -209,11 +209,12 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void findLinksInDocument() {
-        try {
-            List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
-            majorLoop:
-            for (int i = previousLinkHoldersStorageSize; i < linkHoldersStorage.size(); i++) {
-                LinkHolder linkHolder = linkHoldersStorage.get(i);
+
+        List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
+        majorLoop:
+        for (int i = previousLinkHoldersStorageSize; i < linkHoldersStorage.size(); i++) {
+            LinkHolder linkHolder = linkHoldersStorage.get(i);
+            try {
                 Document document = Jsoup.connect(linkHolder.getLink()).timeout(CONNECTION_TIME_OUT).get();
                 Elements elements = document.select("a[href]");
                 for (Element element : elements) {
@@ -225,20 +226,21 @@ public class MainActivity extends AppCompatActivity {
                         break majorLoop;
                     }
                 }
+            } catch (IOException e) {
+                e.printStackTrace();
+                runOnUiThread(() -> {
+                    progressBarDialog.dismiss();
+                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
+                });
             }
-            previousLinkHoldersStorageSize = linkHoldersStorage.size();
-            linkHoldersStorage.addAll(tempLinkHolderStorage);
-            if (!isStopConditionReached(linkHoldersStorage.get(linkHoldersStorage.size() - 1).getLinkDepth())) {
-                findLinksInDocument();
-            } else {
-                processLinkStorage();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
-            runOnUiThread(() -> {
-                progressBarDialog.dismiss();
-                Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-            });
+
+        }
+        previousLinkHoldersStorageSize = linkHoldersStorage.size();
+        linkHoldersStorage.addAll(tempLinkHolderStorage);
+        if (!isStopConditionReached(linkHoldersStorage.get(linkHoldersStorage.size() - 1).getLinkDepth())) {
+            findLinksInDocument();
+        } else {
+            processLinkStorage();
         }
     }
 
