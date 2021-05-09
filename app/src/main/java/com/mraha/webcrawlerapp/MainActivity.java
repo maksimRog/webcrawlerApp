@@ -12,6 +12,8 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.core.app.ActivityCompat;
+import androidx.recyclerview.widget.LinearLayoutManager;
+import androidx.recyclerview.widget.RecyclerView;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -34,13 +36,13 @@ public class MainActivity extends AppCompatActivity {
     private EditText urlView;
     private EditText linkSizeView;
     private EditText linkDepthView;
-    private TextView resultView;
     private ProgressBar progressBar;
     int progressCounter = 0;
     public static int MAX_LINK_DEPTH = 8;
-    public static final int CONNECTION_TIME_OUT = 3000;
+    public static final int CONNECTION_TIME_OUT = 2000;
     public static int MAX_CAPACITY = 10000;
     public AlertDialog progressBarDialog;
+    private RecyclerView recyclerView;
     private int previousLinkHoldersStorageSize = 0;
     public final List<LinkHolder> linkHoldersStorage = new ArrayList<>(MAX_CAPACITY);
     public static final String URL_CONST = "https://www.tut.by/";
@@ -68,10 +70,11 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void initViews() {
+        recyclerView=findViewById(R.id.recyclerView);
+        recyclerView.setLayoutManager(new LinearLayoutManager(this));
         keywordView = findViewById(R.id.keywordView);
         startSearchButton = findViewById(R.id.startSearchView);
         generateSCVButton = findViewById(R.id.generateCSVView);
-        resultView = findViewById(R.id.resultView);
         linkSizeView = findViewById(R.id.linkSizeView);
         linkDepthView = findViewById(R.id.linkDepthView);
         urlView = findViewById(R.id.urlView);
@@ -138,7 +141,6 @@ public class MainActivity extends AppCompatActivity {
             linkHoldersStorage.clear();
         }
         previousLinkHoldersStorageSize = 0;
-        resultView.setText("");
         String capStr = linkSizeView.getText().toString();
         String depthStr = linkDepthView.getText().toString();
         if (capStr.isEmpty() || depthStr.isEmpty() || keywordView.getText().toString().isEmpty()) {
@@ -189,8 +191,8 @@ public class MainActivity extends AppCompatActivity {
                 StringBuffer.append(str.get());
             }
             runOnUiThread(() -> {
+                recyclerView.setAdapter(new DataAdapter(linkHoldersStorage));
                 progressBarDialog.dismiss();
-                resultView.setText(StringBuffer.toString());
                 progressCounter = 0;
                 progressBar.setProgress(0);
                 makeButtonActive(generateSCVButton);
