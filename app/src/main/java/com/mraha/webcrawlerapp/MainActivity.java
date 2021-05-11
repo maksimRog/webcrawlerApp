@@ -1,7 +1,10 @@
 package com.mraha.webcrawlerapp;
 
 import android.Manifest;
+import android.content.Context;
 import android.content.pm.PackageManager;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.Bundle;
 import android.widget.Button;
 import android.widget.EditText;
@@ -40,14 +43,14 @@ public class MainActivity extends AppCompatActivity {
     int progressCounter = 0;
     public static int MAX_LINK_DEPTH = 8;
     public static final int CONNECTION_TIME_OUT = 2000;
-    public static int MAX_CAPACITY = 10000;
+    public static int MAX_CAPACITY = 1000;
     public AlertDialog progressBarDialog;
     private RecyclerView recyclerView;
     private int previousLinkHoldersStorageSize = 0;
     public final List<LinkHolder> linkHoldersStorage = new ArrayList<>(MAX_CAPACITY);
     public static final String URL_CONST = "https://www.tut.by/";
     public static final String SEARCH_CONST = "минск";
-    private final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 2);
+    private final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
 
 
     @Override
@@ -72,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private void initViews() {
         recyclerView = findViewById(R.id.recyclerView);
         recyclerView.setLayoutManager(new LinearLayoutManager(this));
+        recyclerView.setAdapter(new DataAdapter(linkHoldersStorage));
         keywordView = findViewById(R.id.keywordView);
         startSearchButton = findViewById(R.id.startSearchView);
         generateSCVButton = findViewById(R.id.generateCSVView);
@@ -139,6 +143,7 @@ public class MainActivity extends AppCompatActivity {
         }
         if (!linkHoldersStorage.isEmpty()) {
             linkHoldersStorage.clear();
+            recyclerView.getAdapter().notifyDataSetChanged();
         }
         previousLinkHoldersStorageSize = 0;
         String capStr = linkSizeView.getText().toString();
@@ -149,8 +154,8 @@ public class MainActivity extends AppCompatActivity {
         }
         MAX_CAPACITY = Integer.parseInt(capStr);
         MAX_LINK_DEPTH = Integer.parseInt(depthStr);
-        progressBarDialog.show();
         executorService.execute(() -> {
+            runOnUiThread(() -> progressBarDialog.show());
             LinkHolder.idCounter = 1;
             linkHoldersStorage.add(new LinkHolder(url, 1));
             findLinksInDocument();
@@ -162,7 +167,6 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void processLinkStorage() {
-
         List<Callable<String>> tasks = new ArrayList<>(MAX_CAPACITY);
         for (LinkHolder linkHolder : linkHoldersStorage) {
             tasks.add(() -> {
@@ -191,7 +195,7 @@ public class MainActivity extends AppCompatActivity {
                 StringBuffer.append(str.get());
             }
             runOnUiThread(() -> {
-                recyclerView.setAdapter(new DataAdapter(linkHoldersStorage));
+                recyclerView.getAdapter().notifyDataSetChanged();
                 progressBarDialog.dismiss();
                 progressCounter = 0;
                 progressBar.setProgress(0);
@@ -208,8 +212,8 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    private void findLinksInDocument() {
 
+    private List<LinkHolder> findLinks() {
         List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
         majorLoop:
         for (int i = previousLinkHoldersStorageSize; i < linkHoldersStorage.size(); i++) {
@@ -227,22 +231,31 @@ public class MainActivity extends AppCompatActivity {
                     }
                 }
             } catch (IOException e) {
+                linkHolder.setSuccess(false);
                 e.printStackTrace();
-                runOnUiThread(() -> {
-                    progressBarDialog.dismiss();
-                    Toast.makeText(this, e.getMessage(), Toast.LENGTH_LONG).show();
-                });
             }
-
         }
+        return tempLinkHolderStorage;
+    }
+
+    private void findLinksInDocument() {
+        List<LinkHolder> tempLinkHolderStorage = findLinks();
         previousLinkHoldersStorageSize = linkHoldersStorage.size();
         linkHoldersStorage.addAll(tempLinkHolderStorage);
-        if (!isStopConditionReached(linkHoldersStorage.get(linkHoldersStorage.size() - 1).getLinkDepth())) {
+        if (tempLinkHolderStorage.size() == 0 && !linkHoldersStorage.get(linkHoldersStorage.size() - 1).isSuccess()) {
+            runOnUiThread(() -> {
+                progressBarDialog.dismiss();
+                Toast.makeText(this, "No connection or server is not responding!", Toast.LENGTH_LONG).show();
+            });
+        } else if (tempLinkHolderStorage.size() == 0 && linkHoldersStorage.get(linkHoldersStorage.size() - 1).isSuccess()) {
+            processLinkStorage();
+        } else if (!isStopConditionReached(linkHoldersStorage.get(linkHoldersStorage.size() - 1).getLinkDepth())) {
             findLinksInDocument();
         } else {
             processLinkStorage();
         }
     }
+
 
     public void showSaveToCSVDialog() {
         AlertDialog.Builder builder = new AlertDialog.Builder(this);

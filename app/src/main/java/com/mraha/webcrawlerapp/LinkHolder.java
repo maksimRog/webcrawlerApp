@@ -6,6 +6,15 @@ public class LinkHolder {
     private int linkDepth;
     private final int id;
     private int termCounter;
+    private boolean isSuccess=true;
+
+    public boolean isSuccess() {
+        return isSuccess;
+    }
+
+    public void setSuccess(boolean success) {
+        isSuccess = success;
+    }
 
     public int getTermCounter() {
         return termCounter;
