@@ -2,6 +2,9 @@ package com.mraha.webcrawlerapp;
 
 import android.app.Application;
 
+import com.mraha.webcrawlerapp.model.Config;
+import com.mraha.webcrawlerapp.model.LinkHolder;
+
 import java.util.ArrayList;
 import java.util.List;
 

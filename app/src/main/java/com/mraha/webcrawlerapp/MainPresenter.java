@@ -1,6 +1,9 @@
 package com.mraha.webcrawlerapp;
 
 
+import com.mraha.webcrawlerapp.model.Config;
+import com.mraha.webcrawlerapp.model.LinkHolder;
+
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -78,7 +81,6 @@ public class MainPresenter extends MvpPresenter<MainView> {
             processLinkStorage();
         }
     }
-
     private List<LinkHolder> findLinksInStorage() {
         List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
         majorLoop:
@@ -112,7 +114,7 @@ public class MainPresenter extends MvpPresenter<MainView> {
                 try {
                     val = Jsoup.connect(linkHolder.getLink())
                             .timeout(CONNECTION_TIME_OUT).get().text().toLowerCase()
-                            .split(config.getTerm()).length - 1;
+                            .split(config.getTerm().toLowerCase()).length - 1;
                     linkHolder.setTermCounter(val);
                     progressCounter++;
                     float progress = ((float) progressCounter / linkHoldersStorage.size()) * 100;

@@ -1,4 +1,4 @@
-package com.mraha.webcrawlerapp;
+package com.mraha.webcrawlerapp.model;
 
 public class LinkHolder {
     public static int idCounter = 1;

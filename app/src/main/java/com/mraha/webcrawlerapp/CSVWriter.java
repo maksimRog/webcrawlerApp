@@ -2,6 +2,8 @@ package com.mraha.webcrawlerapp;
 
 import android.os.Environment;
 
+import com.mraha.webcrawlerapp.model.LinkHolder;
+
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;

@@ -14,6 +14,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.mraha.webcrawlerapp.model.Config;
+
 import moxy.MvpAppCompatActivity;
 import moxy.presenter.InjectPresenter;
 
@@ -30,6 +32,7 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
     @InjectPresenter
     public MainPresenter mainPresenter;
     private MApplication mApplication;
+    public static final int STORAGE_PERMISSION_CODE = 100;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -44,13 +47,45 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
     }
 
     @Override
-    protected void onRestart() {
-        super.onRestart();
+    protected void onStart() {
+        super.onStart();
         if (mApplication.getLinkHoldersStorage().isEmpty()) {
             makeButtonInactive(generateSCVButton);
         }
     }
 
+
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+        if (requestCode == STORAGE_PERMISSION_CODE) {
+            if (!isPermissionGranted(grantResults)) {
+                showResolveDialog();
+            }else{
+                initObjects();
+                initViews();
+            }
+        }
+    }
+
+    private void showResolveDialog() {
+        AlertDialog.Builder builder = new AlertDialog.Builder(this);
+        builder.setTitle("Need storage permission!").setMessage("Try again?")
+                .setPositiveButton("ok", (dialog, which) -> {
+                    askPermissions();
+                }).create().show();
+    }
+
+    private boolean isPermissionGranted(int[] grantResults) {
+        boolean res = true;
+        for (int i : grantResults) {
+            if (i != PackageManager.PERMISSION_GRANTED) {
+                res = false;
+                break;
+            }
+        }
+        return res;
+    }
 
     private void initViews() {
         recyclerView = findViewById(R.id.recyclerView);
@@ -78,7 +113,6 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
 
 
     private boolean isUserInputCorrect() {
-        makeButtonInactive(generateSCVButton);
         String url = seedPageView.getText().toString();
         if (!isUrlCorrect(url)) {
             Toast.makeText(this, "Wrong URL!", Toast.LENGTH_SHORT).show();
@@ -100,7 +134,7 @@ public class MainActivity extends MvpAppCompatActivity implements MainView {
 
     public void askPermissions() {
         ActivityCompat.requestPermissions(this, new String[]
-                {Manifest.permission.WRITE_EXTERNAL_STORAGE}, 100);
+                {Manifest.permission.WRITE_EXTERNAL_STORAGE}, STORAGE_PERMISSION_CODE);
     }
 
     private void initObjects() {
