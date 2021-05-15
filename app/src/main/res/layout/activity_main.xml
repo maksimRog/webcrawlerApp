@@ -19,7 +19,7 @@
             android:text="Term" />
 
         <EditText
-            android:id="@+id/keywordView"
+            android:id="@+id/termView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:hint="type here..."
@@ -37,7 +37,7 @@
             android:text="Seed page" />
 
         <EditText
-            android:id="@+id/urlView"
+            android:id="@+id/seedPageView"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:hint="https://"

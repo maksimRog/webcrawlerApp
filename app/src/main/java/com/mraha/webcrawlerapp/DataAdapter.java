@@ -13,8 +13,8 @@ import java.util.List;
 public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
     private List<LinkHolder> storage;
 
-    public DataAdapter(List<LinkHolder> storage) {
-        this.storage = storage;
+    public DataAdapter() {
+        this.storage = MApplication.getInstance().getLinkHoldersStorage();
     }
 
     @NonNull
@@ -31,9 +31,9 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
             holder.urlView.setText("url");
             holder.termView.setText("term");
         } else {
-            holder.idView.setText(String.valueOf(storage.get(position-1).getId()));
-            holder.urlView.setText(storage.get(position-1).getLink());
-            holder.termView.setText(String.valueOf(storage.get(position-1).getTermCounter()));
+            holder.idView.setText(String.valueOf(storage.get(position - 1).getId()));
+            holder.urlView.setText(storage.get(position - 1).getLink());
+            holder.termView.setText(String.valueOf(storage.get(position - 1).getTermCounter()));
         }
     }
 
