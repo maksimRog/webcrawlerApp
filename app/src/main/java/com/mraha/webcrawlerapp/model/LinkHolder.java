@@ -1,10 +1,8 @@
 package com.mraha.webcrawlerapp.model;
 
 public class LinkHolder {
-    public static int idCounter = 1;
     private String link;
     private int linkDepth;
-    private final int id;
     private int termCounter;
     private boolean isSuccess=true;
 
@@ -25,15 +23,11 @@ public class LinkHolder {
     }
 
     public LinkHolder(String link, int linkDepth) {
-        id = idCounter;
-        idCounter++;
+
         this.link = link;
         this.linkDepth = linkDepth;
     }
 
-    public int getId() {
-        return id;
-    }
 
     public String getLink() {
         return link;

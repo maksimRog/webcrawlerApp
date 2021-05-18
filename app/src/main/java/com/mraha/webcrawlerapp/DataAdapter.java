@@ -33,7 +33,7 @@ public class DataAdapter extends RecyclerView.Adapter<DataAdapter.ViewHolder> {
             holder.urlView.setText("url");
             holder.termView.setText("term");
         } else {
-            holder.idView.setText(String.valueOf(storage.get(position - 1).getId()));
+            holder.idView.setText(String.valueOf(position));
             holder.urlView.setText(storage.get(position - 1).getLink());
             holder.termView.setText(String.valueOf(storage.get(position - 1).getTermCounter()));
         }

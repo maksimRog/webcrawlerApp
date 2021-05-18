@@ -3,6 +3,7 @@ package com.mraha.webcrawlerapp;
 
 import com.mraha.webcrawlerapp.model.Config;
 import com.mraha.webcrawlerapp.model.LinkHolder;
+import com.mraha.webcrawlerapp.model.Counter;
 
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
@@ -20,17 +21,18 @@ import java.util.concurrent.Future;
 
 import moxy.InjectViewState;
 import moxy.MvpPresenter;
+
 @InjectViewState
 public class MainPresenter extends MvpPresenter<MainView> {
 
     private final ExecutorService executorService = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors() + 1);
-    public static int MAX_CAPACITY = 1000;
+    public static int MAX_CAPACITY;
     public static final int CONNECTION_TIME_OUT = 2000;
     public List<LinkHolder> linkHoldersStorage;
     private int previousLinkHoldersStorageSize = 0;
-    public static int MAX_LINK_DEPTH = 8;
+    public static int MAX_LINK_DEPTH;
     private Config config;
-    private int progressCounter = 0;
+    private Counter counter;
 
     private boolean isUrlCorrect(String url) {
         return url.contains("http");
@@ -54,9 +56,8 @@ public class MainPresenter extends MvpPresenter<MainView> {
         MAX_CAPACITY = Integer.parseInt(config.getMaxLinkSize());
         MAX_LINK_DEPTH = Integer.parseInt(config.getMaxLinkDepth());
         executorService.execute(() -> {
-            progressCounter = 0;
-            (getViewState()).showProgressBar(progressCounter);
-            LinkHolder.idCounter = 1;
+            counter = new Counter();
+            (getViewState()).showProgressBar(counter.getValue());
             linkHoldersStorage.add(new LinkHolder(config.getSeedPage(), 1));
             findLinksInDocument();
         });
@@ -81,6 +82,7 @@ public class MainPresenter extends MvpPresenter<MainView> {
             processLinkStorage();
         }
     }
+
     private List<LinkHolder> findLinksInStorage() {
         List<LinkHolder> tempLinkHolderStorage = new ArrayList<>(MAX_CAPACITY);
         majorLoop:
@@ -91,7 +93,8 @@ public class MainPresenter extends MvpPresenter<MainView> {
                 Elements elements = document.select("a[href]");
                 for (Element element : elements) {
                     String link = element.attr("href");
-                    if (isUrlCorrect(link)) {
+                    if (isUrlCorrect(link) && !isLinkAlreadyInStorage(tempLinkHolderStorage, link)
+                            && !isLinkAlreadyInStorage(linkHoldersStorage, link)) {
                         tempLinkHolderStorage.add(new LinkHolder(link, linkHolder.getLinkDepth() + 1));
                     }
                     if (tempLinkHolderStorage.size() + linkHoldersStorage.size() >= MAX_CAPACITY) {
@@ -116,13 +119,12 @@ public class MainPresenter extends MvpPresenter<MainView> {
                             .timeout(CONNECTION_TIME_OUT).get().text().toLowerCase()
                             .split(config.getTerm().toLowerCase()).length - 1;
                     linkHolder.setTermCounter(val);
-                    progressCounter++;
-                    float progress = ((float) progressCounter / linkHoldersStorage.size()) * 100;
+                    float progress = ((float) counter.getValue() / linkHoldersStorage.size()) * 100;
                     getViewState().updateProgressBar((int) progress);
                 } catch (IOException e) {
                     e.printStackTrace();
                 }
-                return linkHolder.getId() + " " + linkHolder.getLink() + " " + val + "\n";
+                return linkHolder.getLink() + " " + val + "\n";
             });
         }
         try {
@@ -142,4 +144,14 @@ public class MainPresenter extends MvpPresenter<MainView> {
         }
     }
 
+    private boolean isLinkAlreadyInStorage(List<LinkHolder> storage, String link) {
+        boolean res = false;
+        for (LinkHolder linkHolder : storage) {
+            if (linkHolder.getLink().equals(link)) {
+                res = true;
+                break;
+            }
+        }
+        return res;
+    }
 }

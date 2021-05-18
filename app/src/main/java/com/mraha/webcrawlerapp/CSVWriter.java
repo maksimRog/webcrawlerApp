@@ -2,6 +2,7 @@ package com.mraha.webcrawlerapp;
 
 import android.os.Environment;
 
+import com.mraha.webcrawlerapp.model.Counter;
 import com.mraha.webcrawlerapp.model.LinkHolder;
 
 import java.io.File;
@@ -22,6 +23,7 @@ public class CSVWriter {
 
 
     public void writeFoundData(List<LinkHolder> data) {
+        Counter counter = new Counter();
         try {
             fileWriter.append("id");
             fileWriter.append(',');
@@ -30,7 +32,7 @@ public class CSVWriter {
             fileWriter.append("term counter");
             fileWriter.append('\n');
             for (LinkHolder linkHolder : data) {
-                fileWriter.append(String.valueOf(linkHolder.getId()));
+                fileWriter.append(String.valueOf(counter.getValue()));
                 fileWriter.append(',');
                 fileWriter.append(linkHolder.getLink());
                 fileWriter.append(',');
